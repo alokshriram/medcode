@@ -1,0 +1,151 @@
+# Project Development Guidelines
+
+## Communication Style
+- Provide direct, to-the-point feedback
+- Use frameworks and structured approaches when giving feedback
+- Focus on empathy and effective communication in all interactions
+- Explain reasoning behind decisions clearly
+
+## Python Backend (FastAPI)
+
+### Code Style
+- Follow PEP 8 style guide strictly
+- Use type hints for all function parameters and return values
+- Maximum line length: 100 characters
+- Use descriptive variable names (avoid single letters except i, j in simple loops)
+- Prefer explicit over implicit
+
+### FastAPI Standards
+- All API endpoints must have comprehensive docstrings
+- Use Pydantic models for request/response validation
+- Include proper error handling with appropriate HTTP status codes
+- Follow REST conventions:
+  - GET for retrieval
+  - POST for creation
+  - PUT/PATCH for updates
+  - DELETE for deletion
+- Return consistent response structures
+- Use dependency injection for shared resources (database, auth, etc.)
+
+### Python Best Practices
+- Use virtual environments (venv or pyenv-virtualenv)
+- Keep dependencies in requirements.txt or pyproject.toml
+- Handle exceptions explicitly, avoid bare except clauses
+- Use context managers (with statements) for resource management
+- Write defensive code with proper validation
+
+## React Frontend
+
+### Code Style
+- Use TypeScript for all new code
+- Use functional components with hooks exclusively (no class components)
+- Maximum component length: 200 lines (extract if longer)
+- Use meaningful component and variable names
+- One component per file (except for small, tightly coupled helper components)
+
+### React Standards
+- Extract reusable logic into custom hooks
+- Use proper dependency arrays in useEffect
+- Avoid prop drilling - use Context or state management when needed
+- Keep components focused on single responsibility
+- Use composition over inheritance
+- Implement proper error boundaries
+
+### Styling
+- Use Tailwind CSS utility classes (core utilities only)
+- Avoid inline styles unless absolutely necessary
+- Keep responsive design mobile-first
+- Use semantic HTML elements
+
+## Testing
+
+### Python Testing
+- Use pytest for all Python tests
+- Write tests for:
+  - All API endpoints (happy path and error cases)
+  - Business logic functions
+  - Data validation
+- Aim for 80% code coverage minimum
+- Use fixtures for common test data
+- Mock external dependencies
+
+### React Testing
+- Use Jest and React Testing Library
+- Test user interactions, not implementation details
+- Write tests for:
+  - User flows
+  - Edge cases
+  - Error states
+- Avoid testing library internals
+
+## Git Workflow
+
+### Commit Messages
+Use conventional commits format:
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting, missing semicolons, etc.)
+- `refactor:` - Code refactoring
+- `test:` - Adding or updating tests
+- `chore:` - Maintenance tasks
+
+Example: `feat: add user authentication endpoint`
+
+### Branch Strategy
+- Create feature branches from main: `feature/description`
+- Create bugfix branches: `fix/description`
+- Keep branches focused and short-lived
+- Squash commits before merging to main
+- Delete branches after merging
+
+## Code Review Principles
+- Prioritize code readability over cleverness
+- Question complexity - simpler is usually better
+- Ensure proper error handling exists
+- Check for security vulnerabilities
+- Verify tests cover new functionality
+
+## Security
+- Never commit secrets, API keys, or credentials
+- Use environment variables for configuration
+- Validate and sanitize all user inputs
+- Use parameterized queries (SQLAlchemy handles this)
+- Implement proper authentication and authorization
+- Follow principle of least privilege
+
+## Documentation
+- README.md should explain:
+  - What the project does
+  - How to set up locally
+  - How to run tests
+  - How to deploy
+- Document complex algorithms or business logic
+- Keep API documentation up-to-date
+- Use clear, empathetic language in comments
+
+## Dependencies
+- Keep dependencies minimal and well-maintained
+- Review dependencies for security vulnerabilities
+- Document why each major dependency is needed
+- Update dependencies regularly but test thoroughly
+
+## Performance
+- Optimize only when necessary (measure first)
+- Use database indexes appropriately
+- Implement pagination for large datasets
+- Use React.memo and useMemo judiciously (not by default)
+- Lazy load components when appropriate
+
+## Error Handling
+- Provide clear, actionable error messages
+- Log errors with sufficient context for debugging
+- Handle edge cases gracefully
+- Never expose sensitive information in error messages
+- Return appropriate HTTP status codes
+
+## Environment Setup
+- Use Python 3.12+ with pyenv for version management
+- Use Node.js LTS with nvm for version management
+- Document all environment variables needed
+- Provide example .env files (.env.example)
