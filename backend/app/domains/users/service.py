@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.domains.users.models import User
+from app.domains.users.roles import DEFAULT_ROLE
 from app.domains.users.schemas import UserCreate, UserUpdate
 
 
@@ -68,7 +69,7 @@ class UsersService:
             full_name=full_name,
             google_id=google_id,
             picture_url=picture_url,
-            roles=["coder"],
+            roles=[DEFAULT_ROLE],
             last_login=datetime.now(timezone.utc),
         )
         self.db.add(new_user)

@@ -37,6 +37,8 @@ def google_auth(auth_request: GoogleAuthRequest, db: DbSession):
 
         access_token = create_access_token(
             subject=str(user.id),
+            email=user.email,
+            roles=user.roles,
         )
 
         return TokenResponse(access_token=access_token)
