@@ -1,7 +1,18 @@
+import logging
+import sys
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger(__name__)
 from app.domains.workflow.router import router as workflow_router
 from app.domains.records.router import router as records_router
 from app.domains.catalogs.router import router as catalogs_router

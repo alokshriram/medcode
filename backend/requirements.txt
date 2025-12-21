@@ -1,7 +1,7 @@
 # FastAPI and server
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
-pydantic>=2.5.0
+pydantic[email]>=2.5.0
 pydantic-settings>=2.1.0
 
 # Database
@@ -12,6 +12,7 @@ alembic>=1.13.1
 # Authentication
 python-jose[cryptography]>=3.3.0
 google-auth>=2.27.0
+requests>=2.31.0
 
 # Redis
 redis>=5.0.1
