@@ -7,10 +7,16 @@ from app.core.config import settings
 from app.core.database import Base
 
 # Import all models so they are registered with Base.metadata
-from app.domains.workflow.models import CodingTask
+from app.domains.workflow.models import (
+    CodingTask, CodingQueueItem, EncounterSnapshot, CodingConfiguration
+)
 from app.domains.records.models import MedicalRecord
 from app.domains.catalogs.models import CPTCode, ICD10Code
 from app.domains.users.models import User
+from app.domains.encounters.models import (
+    HL7Message, Patient, Encounter, Diagnosis,
+    Procedure, Observation, Order, Document, ServiceLineRule
+)
 
 config = context.config
 

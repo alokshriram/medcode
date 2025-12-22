@@ -17,6 +17,7 @@ from app.domains.workflow.router import router as workflow_router
 from app.domains.records.router import router as records_router
 from app.domains.catalogs.router import router as catalogs_router
 from app.domains.users.router import router as users_router
+from app.domains.encounters.router import router as encounters_router
 from app.bff.router import router as bff_router
 
 app = FastAPI(
@@ -59,6 +60,11 @@ app.include_router(
     users_router,
     prefix=f"{settings.API_V1_PREFIX}/users",
     tags=["users"],
+)
+app.include_router(
+    encounters_router,
+    prefix=f"{settings.API_V1_PREFIX}/encounters",
+    tags=["encounters"],
 )
 
 # BFF router

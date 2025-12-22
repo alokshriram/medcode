@@ -37,9 +37,12 @@ The application is organized around bounded contexts. Each context has:
 | Context | DB Schema | API Path | Description |
 |---------|-----------|----------|-------------|
 | Coding Workflow | `workflow` | `/api/v1/workflow/` | Task management, assignments, status tracking |
-| Medical Records | `records` | `/api/v1/records/` | Document ingestion, categorization, summarization |
+| Encounters | `encounters` | `/api/v1/encounters/` | HL7 ingestion, patient/encounter aggregation, clinical data correlation |
+| Medical Records | `records` | `/api/v1/records/` | Codable snapshots, AI summarization, document management |
 | Code Catalogs | `catalogs` | `/api/v1/catalogs/` | ICD-10, CPT code management and search |
 | Users/Auth | `users` | `/api/v1/users/` | Identity, roles, permissions |
+
+**Data Flow:** HL7 → `encounters` (raw clinical aggregation) → `records` (codable snapshots) → `workflow` (coding work items)
 
 When adding new features:
 1. Identify which bounded context it belongs to
@@ -70,6 +73,7 @@ medcode/                          # Monorepo root
 │   │   ├── main.py              # FastAPI application entry
 │   │   ├── core/                # Shared utilities, config, security
 │   │   ├── domains/             # Bounded contexts
+│   │   │   ├── encounters/      # HL7 ingestion, clinical aggregation
 │   │   │   ├── workflow/
 │   │   │   │   ├── models.py    # SQLAlchemy models
 │   │   │   │   ├── schemas.py   # Pydantic schemas
@@ -93,6 +97,8 @@ medcode/                          # Monorepo root
 │   │   └── utils/               # Utilities
 │   ├── package.json
 │   └── Dockerfile
+├── docs/
+│   └── pdd/                     # Product Design Decisions
 ├── docker-compose.yml           # Local development orchestration
 ├── .env.example
 ├── CLAUDE.md                    # This file
@@ -205,6 +211,11 @@ When implementing:
 - Design for async processing (medical records can be large)
 - Plan for model versioning and updates
 
+## Product Design Decisions
+
+Detailed product design decisions are documented in `docs/pdd/`:
+- [PDD-001: HL7 Ingestion and Codable Encounters](docs/pdd/PDD-001-hl7-ingestion-and-codable-encounters.md)
+
 ## Decisions Log
 
 | Date | Decision | Rationale |
@@ -213,3 +224,5 @@ When implementing:
 | Initial | Monorepo structure | Simplifies development workflow; shared tooling; atomic commits across stack |
 | Initial | PostgreSQL schemas for bounded contexts | Clear data ownership; supports future service extraction if needed |
 | Initial | BFF without persistence | Clean separation; orchestration only; avoids data duplication |
+| 2025-12-21 | New `encounters` bounded context | Separates raw HL7/clinical aggregation from higher-level records; see PDD-001 |
+| 2025-12-21 | Snapshot model for coding | Coders work against point-in-time snapshots for audit/consistency; see PDD-001 |
