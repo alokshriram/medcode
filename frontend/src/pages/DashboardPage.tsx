@@ -1,5 +1,6 @@
 import { useAuth } from '../hooks/useAuth'
 import { useDashboard } from '../hooks/useDashboard'
+import { ManageDataPanel } from '../components/ManageDataPanel'
 
 export default function DashboardPage() {
   const { user, logout } = useAuth()
@@ -51,6 +52,9 @@ export default function DashboardPage() {
             />
           </div>
         ) : null}
+
+        {/* Manage Data Panel - only visible to coders and admins */}
+        {user?.roles && <ManageDataPanel userRoles={user.roles} />}
       </main>
     </div>
   )
