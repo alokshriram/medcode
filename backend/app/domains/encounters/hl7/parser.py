@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 SEGMENT_DELIMITER = "\r"
 # HL7 batch message delimiters - match MSH| at start of line or after \r
 MESSAGE_START_PATTERN = re.compile(r"(?:^|\r)MSH\|")
+# Valid HL7 segment pattern - 2-3 uppercase letters followed by |
+# Common segments: MSH, PID, PV1, OBR, OBX, ORC, DG1, PR1, IN1, NK1, EVN, TXA, RGS, AIS, NTE, etc.
+HL7_SEGMENT_PATTERN = re.compile(r"^[A-Z][A-Z0-9]{1,2}\|")
 
 
 class HL7Parser:
@@ -89,11 +92,39 @@ class HL7Parser:
         return parsed
 
     def _normalize_message(self, raw: str) -> str:
-        """Normalize line endings to HL7 standard (carriage return)."""
+        """Normalize line endings to HL7 standard (carriage return) and filter non-HL7 content."""
         # Replace various line ending combinations with \r
         normalized = raw.replace("\r\n", "\r").replace("\n", "\r")
+
+        # Filter to only include valid HL7 segment lines
+        normalized = self._filter_hl7_lines(normalized)
+
         # Remove leading/trailing whitespace but preserve internal structure
         return normalized.strip()
+
+    def _filter_hl7_lines(self, content: str) -> str:
+        """
+        Filter content to only include valid HL7 segment lines.
+
+        This removes headers, separators, notes, and other non-HL7 content
+        that may be embedded in documentation-style HL7 files.
+        """
+        lines = content.split("\r")
+        hl7_lines = []
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            # Check if line starts with a valid HL7 segment pattern
+            if HL7_SEGMENT_PATTERN.match(stripped):
+                hl7_lines.append(stripped)
+            else:
+                # Log filtered content for debugging (only first 50 chars)
+                if stripped and not stripped.startswith("="):
+                    logger.debug(f"Filtered non-HL7 line: {stripped[:50]}...")
+
+        return "\r".join(hl7_lines)
 
     def _parse_msh(self, msg: Message, parsed: ParsedHL7Message) -> None:
         """Extract message header information from MSH segment."""
@@ -587,17 +618,60 @@ class HL7BatchParser:
         Parse file content containing one or more HL7 messages.
 
         Args:
-            content: File content (may contain multiple messages)
+            content: File content (may contain multiple messages, possibly with
+                     embedded documentation, headers, and notes)
 
         Returns:
             List of parsed messages
         """
-        messages = self._split_messages(content)
-        return [self.parser.parse(msg) for msg in messages if msg.strip()]
+        # First, filter to only HL7 content
+        filtered_content = self._filter_to_hl7_content(content)
+
+        # Then split into individual messages
+        messages = self._split_messages(filtered_content)
+
+        # Parse each message
+        parsed_messages = []
+        for msg in messages:
+            if msg.strip():
+                parsed = self.parser.parse(msg)
+                # Only include successfully parsed messages with valid control ID
+                if parsed.message_control_id != "UNKNOWN":
+                    parsed_messages.append(parsed)
+                elif not parsed.parse_errors:
+                    # Include even if unknown control ID, but had no errors
+                    parsed_messages.append(parsed)
+
+        return parsed_messages
+
+    def _filter_to_hl7_content(self, content: str) -> str:
+        """
+        Filter file content to only include valid HL7 segment lines.
+
+        This handles documentation-style files that have HL7 messages
+        embedded within headers, separators, and explanatory text.
+        """
+        # Normalize line endings
+        normalized = content.replace("\r\n", "\r").replace("\n", "\r")
+
+        lines = normalized.split("\r")
+        hl7_lines = []
+
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            # Check if line starts with a valid HL7 segment pattern
+            if HL7_SEGMENT_PATTERN.match(stripped):
+                hl7_lines.append(stripped)
+
+        filtered = "\r".join(hl7_lines)
+        logger.debug(f"Filtered content: {len(lines)} lines -> {len(hl7_lines)} HL7 segments")
+        return filtered
 
     def _split_messages(self, content: str) -> list[str]:
         """Split batch content into individual messages."""
-        # Normalize line endings
+        # Content should already be filtered, but normalize just in case
         normalized = content.replace("\r\n", "\r").replace("\n", "\r")
 
         # Find all MSH segment starts
