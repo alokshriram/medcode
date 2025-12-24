@@ -25,8 +25,28 @@ export interface Encounter {
   updated_at: string
 }
 
+export interface Patient {
+  id: string
+  mrn: string
+  name_given: string | null
+  name_family: string | null
+  date_of_birth: string | null
+  gender: string | null
+}
+
+export interface EncounterWithPatient extends Encounter {
+  patient: Patient
+}
+
 export interface EncounterListResponse {
-  items: Encounter[]
+  encounters: Encounter[]
+  total: number
+  skip: number
+  limit: number
+}
+
+export interface EncounterWithPatientListResponse {
+  encounters: EncounterWithPatient[]
   total: number
   skip: number
   limit: number
@@ -59,8 +79,28 @@ export const encountersApi = {
     service_line?: string
     skip?: number
     limit?: number
-  }): Promise<EncounterListResponse> => {
-    const response = await apiClient.get<EncounterListResponse>('/encounters', { params })
+    include_patient?: boolean
+  }): Promise<EncounterListResponse | EncounterWithPatientListResponse> => {
+    const response = await apiClient.get<EncounterListResponse | EncounterWithPatientListResponse>(
+      '/encounters',
+      { params }
+    )
+    return response.data
+  },
+
+  /**
+   * List encounters with patient info included
+   */
+  listEncountersWithPatient: async (params?: {
+    status?: string
+    encounter_type?: string
+    service_line?: string
+    skip?: number
+    limit?: number
+  }): Promise<EncounterWithPatientListResponse> => {
+    const response = await apiClient.get<EncounterWithPatientListResponse>('/encounters', {
+      params: { ...params, include_patient: true },
+    })
     return response.data
   },
 

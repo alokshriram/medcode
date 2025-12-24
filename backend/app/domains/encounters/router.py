@@ -11,6 +11,8 @@ from app.domains.encounters.schemas import (
     EncounterResponse,
     EncounterDetailResponse,
     EncounterListResponse,
+    EncounterListWithPatientResponse,
+    EncounterWithPatientResponse,
     EncounterFilters,
     PatientResponse,
     HL7MessageResponse,
@@ -111,7 +113,7 @@ async def upload_hl7_files(
 
 # --- Encounter Endpoints ---
 
-@router.get("/", response_model=EncounterListResponse)
+@router.get("/", response_model=EncounterListResponse | EncounterListWithPatientResponse)
 def list_encounters(
     db: DbSession,
     current_user: CurrentUser,
@@ -122,6 +124,7 @@ def list_encounters(
     service_line: str | None = Query(None, description="Filter by service line"),
     patient_mrn: str | None = Query(None, description="Filter by patient MRN"),
     visit_number: str | None = Query(None, description="Filter by visit number"),
+    include_patient: bool = Query(False, description="Include patient info in response"),
 ):
     """
     List encounters with optional filters.
@@ -137,7 +140,17 @@ def list_encounters(
     )
 
     service = EncountersService(db)
-    encounters, total = service.list_encounters(filters=filters, skip=skip, limit=limit)
+    encounters, total = service.list_encounters(
+        filters=filters, skip=skip, limit=limit, include_patient=include_patient
+    )
+
+    if include_patient:
+        return EncounterListWithPatientResponse(
+            encounters=[EncounterWithPatientResponse.model_validate(e) for e in encounters],
+            total=total,
+            skip=skip,
+            limit=limit,
+        )
 
     return EncounterListResponse(
         encounters=[EncounterResponse.model_validate(e) for e in encounters],

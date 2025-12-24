@@ -68,6 +68,14 @@ class EncounterListResponse(BaseModel):
     limit: int
 
 
+class EncounterListWithPatientResponse(BaseModel):
+    """List response with patient info included for each encounter."""
+    encounters: list[EncounterWithPatientResponse]
+    total: int
+    skip: int
+    limit: int
+
+
 # --- Diagnosis Schemas ---
 
 class DiagnosisBase(BaseModel):

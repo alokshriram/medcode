@@ -1,10 +1,13 @@
 import { useAuth } from '../hooks/useAuth'
-import { useDashboard } from '../hooks/useDashboard'
-import { ManageDataPanel } from '../components/ManageDataPanel'
+import { DashboardTile } from '../components/DashboardTile'
 
 export default function DashboardPage() {
   const { user, logout } = useAuth()
-  const { data: dashboard, isLoading } = useDashboard()
+
+  // Check if user has coder/admin role for Manage Data
+  const hasManageDataAccess = user?.roles?.some((role) =>
+    ['coder', 'admin'].includes(role.toLowerCase())
+  )
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -13,10 +16,7 @@ export default function DashboardPage() {
           <h1 className="text-xl font-bold text-gray-900">MedCode</h1>
           <div className="flex items-center gap-4">
             <span className="text-gray-600">{user?.full_name}</span>
-            <button
-              onClick={logout}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
+            <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">
               Sign out
             </button>
           </div>
@@ -26,60 +26,58 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Dashboard</h2>
 
-        {isLoading ? (
-          <p>Loading dashboard...</p>
-        ) : dashboard ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <DashboardCard
-              title="Pending Tasks"
-              value={dashboard.pending_tasks}
-              color="yellow"
-            />
-            <DashboardCard
-              title="In Progress"
-              value={dashboard.in_progress_tasks}
-              color="blue"
-            />
-            <DashboardCard
-              title="Completed Today"
-              value={dashboard.completed_tasks_today}
-              color="green"
-            />
-            <DashboardCard
-              title="Total Records"
-              value={dashboard.total_records}
-              color="gray"
-            />
-          </div>
-        ) : null}
-
-        {/* Manage Data Panel - only visible to coders and admins */}
-        {user?.roles && <ManageDataPanel userRoles={user.roles} />}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <DashboardTile
+            title="Manage Data"
+            description="Upload HL7 files to import patient encounters"
+            to="/manage-data"
+            icon={<UploadIcon />}
+            disabled={!hasManageDataAccess}
+          />
+          <DashboardTile
+            title="Code"
+            description="View and process patient encounters"
+            to="/code"
+            icon={<CodeIcon />}
+          />
+        </div>
       </main>
     </div>
   )
 }
 
-function DashboardCard({
-  title,
-  value,
-  color,
-}: {
-  title: string
-  value: number
-  color: 'yellow' | 'blue' | 'green' | 'gray'
-}) {
-  const colorClasses = {
-    yellow: 'bg-yellow-50 border-yellow-200',
-    blue: 'bg-blue-50 border-blue-200',
-    green: 'bg-green-50 border-green-200',
-    gray: 'bg-gray-50 border-gray-200',
-  }
-
+function UploadIcon() {
   return (
-    <div className={`p-6 rounded-lg border ${colorClasses[color]}`}>
-      <p className="text-sm text-gray-600">{title}</p>
-      <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
-    </div>
+    <svg
+      className="h-12 w-12"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+      />
+    </svg>
+  )
+}
+
+function CodeIcon() {
+  return (
+    <svg
+      className="h-12 w-12"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
+    </svg>
   )
 }

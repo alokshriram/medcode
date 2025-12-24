@@ -114,9 +114,13 @@ class EncountersService:
         filters: EncounterFilters | None = None,
         skip: int = 0,
         limit: int = 100,
+        include_patient: bool = False,
     ) -> tuple[list[Encounter], int]:
         """List encounters with optional filters."""
         query = self.db.query(Encounter).join(Patient)
+
+        if include_patient:
+            query = query.options(joinedload(Encounter.patient))
 
         if filters:
             if filters.status:

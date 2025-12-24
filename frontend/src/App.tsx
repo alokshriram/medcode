@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
+import ManageDataPage from './pages/ManageDataPage'
+import CodePage from './pages/CodePage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -26,6 +28,22 @@ function App() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manage-data"
+        element={
+          <ProtectedRoute>
+            <ManageDataPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/code"
+        element={
+          <ProtectedRoute>
+            <CodePage />
           </ProtectedRoute>
         }
       />
