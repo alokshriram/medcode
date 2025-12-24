@@ -10,7 +10,6 @@ from app.core.database import Base
 from app.domains.workflow.models import (
     CodingTask, CodingQueueItem, EncounterSnapshot, CodingConfiguration
 )
-from app.domains.records.models import MedicalRecord
 from app.domains.catalogs.models import CPTCode, ICD10Code
 from app.domains.users.models import User
 from app.domains.encounters.models import (

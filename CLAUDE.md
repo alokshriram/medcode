@@ -37,12 +37,16 @@ The application is organized around bounded contexts. Each context has:
 | Context | DB Schema | API Path | Description |
 |---------|-----------|----------|-------------|
 | Coding Workflow | `workflow` | `/api/v1/workflow/` | Task management, assignments, status tracking |
-| Encounters | `encounters` | `/api/v1/encounters/` | HL7 ingestion, patient/encounter aggregation, clinical data correlation |
-| Medical Records | `records` | `/api/v1/records/` | Codable snapshots, AI summarization, document management |
+| Encounters | `encounters` | `/api/v1/encounters/` | HL7 ingestion, patient/encounter aggregation, clinical data, codable snapshots |
 | Code Catalogs | `catalogs` | `/api/v1/catalogs/` | ICD-10, CPT code management and search |
 | Users/Auth | `users` | `/api/v1/users/` | Identity, roles, permissions |
 
-**Data Flow:** HL7 → `encounters` (raw clinical aggregation) → `records` (codable snapshots) → `workflow` (coding work items)
+**Data Flow:** HL7 → `encounters` (ingestion, deduplication, clinical aggregation) → `workflow` (coding queue items)
+
+**Ingestion Architecture:**
+- The `hl7_messages` table stores raw HL7 content with deduplication via MSH-10 (Message Control ID)
+- External integration engines normalize non-HL7 formats (CCD, FHIR, etc.) to HL7 before ingestion
+- Encounters domain owns the entire ingestion pipeline using an Anti-Corruption Layer (ACL) pattern
 
 When adding new features:
 1. Identify which bounded context it belongs to
@@ -73,13 +77,12 @@ medcode/                          # Monorepo root
 │   │   ├── main.py              # FastAPI application entry
 │   │   ├── core/                # Shared utilities, config, security
 │   │   ├── domains/             # Bounded contexts
-│   │   │   ├── encounters/      # HL7 ingestion, clinical aggregation
+│   │   │   ├── encounters/      # HL7 ingestion, clinical aggregation, codable snapshots
 │   │   │   ├── workflow/
 │   │   │   │   ├── models.py    # SQLAlchemy models
 │   │   │   │   ├── schemas.py   # Pydantic schemas
 │   │   │   │   ├── router.py    # API routes
 │   │   │   │   └── service.py   # Business logic
-│   │   │   ├── records/
 │   │   │   ├── catalogs/
 │   │   │   └── users/
 │   │   └── bff/                 # Backend for Frontend orchestration
@@ -226,3 +229,4 @@ Detailed product design decisions are documented in `docs/pdd/`:
 | Initial | BFF without persistence | Clean separation; orchestration only; avoids data duplication |
 | 2025-12-21 | New `encounters` bounded context | Separates raw HL7/clinical aggregation from higher-level records; see PDD-001 |
 | 2025-12-21 | Snapshot model for coding | Coders work against point-in-time snapshots for audit/consistency; see PDD-001 |
+| 2025-12-24 | Consolidated records into encounters | `hl7_messages` table serves as raw records with deduplication; external integration engines handle format normalization to HL7 |

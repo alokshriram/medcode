@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from app.core.dependencies import CurrentUser, DbSession
 from app.domains.catalogs.service import CatalogsService
-from app.domains.records.service import RecordsService
+from app.domains.encounters.service import EncountersService
 from app.domains.workflow.service import WorkflowService
 
 router = APIRouter()
@@ -32,10 +32,10 @@ def get_dashboard(db: DbSession, current_user: CurrentUser):
     BFF pattern: orchestrates calls to domain services without persistence.
     """
     workflow_service = WorkflowService(db)
-    records_service = RecordsService(db)
+    encounters_service = EncountersService(db)
 
     all_tasks = workflow_service.get_tasks()
-    all_records = records_service.get_records()
+    _, total_encounters = encounters_service.list_encounters()
 
     pending = sum(1 for t in all_tasks if t.status == "pending")
     in_progress = sum(1 for t in all_tasks if t.status == "in_progress")
@@ -45,7 +45,7 @@ def get_dashboard(db: DbSession, current_user: CurrentUser):
         pending_tasks=pending,
         in_progress_tasks=in_progress,
         completed_tasks_today=completed_today,
-        total_records=len(all_records),
+        total_records=total_encounters,
     )
 
 
