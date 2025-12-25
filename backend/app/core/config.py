@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # Super User - gets all roles on signup and login
+    SUPER_USER_EMAIL: str | None = None
+
     class Config:
         env_file = "../.env"
         case_sensitive = True

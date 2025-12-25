@@ -3,8 +3,9 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.domains.users.models import User
-from app.domains.users.roles import DEFAULT_ROLE
+from app.domains.users.roles import ALL_ROLES, DEFAULT_ROLE
 from app.domains.users.schemas import UserCreate, UserUpdate
 
 
@@ -48,10 +49,29 @@ class UsersService:
             db_user.last_login = datetime.now(timezone.utc)
             self.db.commit()
 
+    def _is_super_user(self, email: str) -> bool:
+        """Check if the email matches the configured super user."""
+        return (
+            settings.SUPER_USER_EMAIL is not None
+            and email.lower() == settings.SUPER_USER_EMAIL.lower()
+        )
+
+    def _ensure_super_user_roles(self, user: User) -> None:
+        """Ensure super user has all available roles."""
+        if self._is_super_user(user.email):
+            # Merge all roles with existing roles (in case new roles were added)
+            current_roles = set(user.roles or [])
+            all_roles = set(ALL_ROLES)
+            if not all_roles.issubset(current_roles):
+                user.roles = list(current_roles | all_roles)
+
     def get_or_create_google_user(self, google_id: str, email: str, full_name: str, picture_url: str | None = None) -> User:
         user = self.get_user_by_google_id(google_id)
         if user:
+            self._ensure_super_user_roles(user)
             self.update_last_login(user.id)
+            self.db.commit()
+            self.db.refresh(user)
             return user
 
         user = self.get_user_by_email(email)
@@ -60,16 +80,20 @@ class UsersService:
             if picture_url:
                 user.picture_url = picture_url
             user.last_login = datetime.now(timezone.utc)
+            self._ensure_super_user_roles(user)
             self.db.commit()
             self.db.refresh(user)
             return user
+
+        # Determine roles for new user
+        roles = ALL_ROLES if self._is_super_user(email) else [DEFAULT_ROLE]
 
         new_user = User(
             email=email,
             full_name=full_name,
             google_id=google_id,
             picture_url=picture_url,
-            roles=[DEFAULT_ROLE],
+            roles=roles,
             last_login=datetime.now(timezone.utc),
         )
         self.db.add(new_user)
