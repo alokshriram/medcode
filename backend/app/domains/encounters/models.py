@@ -14,6 +14,7 @@ class HL7Message(Base):
     __table_args__ = {"schema": "encounters"}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     message_control_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     message_type: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
     event_type: Mapped[str | None] = mapped_column(String(10))
@@ -30,6 +31,7 @@ class Patient(Base):
     __table_args__ = {"schema": "encounters"}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     mrn: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     name_family: Mapped[str | None] = mapped_column(String(255))
     name_given: Mapped[str | None] = mapped_column(String(255))
@@ -48,6 +50,7 @@ class Encounter(Base):
     __table_args__ = {"schema": "encounters"}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("encounters.patients.id"), nullable=False, index=True)
     visit_number: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     encounter_type: Mapped[str | None] = mapped_column(String(50))  # inpatient, outpatient, emergency, observation

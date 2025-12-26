@@ -4,7 +4,10 @@
       "Bash(mkdir:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(DATABASE_URL=postgresql://postgres:postgres@localhost:5432/medcode alembic upgrade:*)",
+      "Bash(DATABASE_URL=postgresql://postgres:postgres@localhost:5432/medcode python:*)"
     ]
   }
 }

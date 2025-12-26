@@ -22,6 +22,7 @@ class CodingTask(Base):
     __table_args__ = {"schema": "workflow"}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(50), default="pending")
@@ -39,6 +40,7 @@ class CodingQueueItem(Base):
     __table_args__ = {"schema": "workflow"}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     encounter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     billing_component: Mapped[str] = mapped_column(String(20), nullable=False)  # facility, professional
     queue_type: Mapped[str | None] = mapped_column(String(50))
@@ -63,6 +65,7 @@ class EncounterSnapshot(Base):
     __table_args__ = {"schema": "workflow"}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     encounter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     queue_item_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("workflow.coding_queue_items.id"), nullable=False, index=True)
     snapshot_data: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
@@ -80,6 +83,7 @@ class CodingConfiguration(Base):
     __table_args__ = {"schema": "workflow"}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     key: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     value: Mapped[dict[str, Any] | list | str | int | bool] = mapped_column(JSON, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
