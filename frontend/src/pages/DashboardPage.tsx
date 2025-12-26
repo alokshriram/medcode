@@ -1,11 +1,22 @@
 import { useAuth } from '../hooks/useAuth'
 import { DashboardTile } from '../components/DashboardTile'
+import { TenantSwitcher } from '../components/TenantSwitcher'
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth()
+  const {
+    user,
+    logout,
+    effectiveRoles,
+    currentTenant,
+    availableTenants,
+    switchTenant,
+    isSwitchingTenant,
+    isImpersonating,
+    stopImpersonation,
+  } = useAuth()
 
-  // Check if user has coder/admin role for Manage Data
-  const hasManageDataAccess = user?.roles?.some((role) =>
+  // Check if user has coder/admin role for Manage Data (using tenant-aware roles)
+  const hasManageDataAccess = effectiveRoles.some((role) =>
     ['coder', 'admin'].includes(role.toLowerCase())
   )
 
@@ -15,6 +26,14 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-900">MedCode</h1>
           <div className="flex items-center gap-4">
+            <TenantSwitcher
+              currentTenant={currentTenant}
+              availableTenants={availableTenants}
+              onSwitchTenant={switchTenant}
+              isSwitching={isSwitchingTenant}
+              isImpersonating={isImpersonating}
+              onStopImpersonation={stopImpersonation}
+            />
             <span className="text-gray-600">{user?.full_name}</span>
             <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">
               Sign out

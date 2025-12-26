@@ -8,6 +8,13 @@ jest.mock('../hooks/useAuth', () => ({
     logout: jest.fn(),
     isAuthenticated: true,
     isLoading: false,
+    effectiveRoles: ['coder'],
+    currentTenant: { id: 'tenant-1', name: 'Test Org', slug: 'test-org' },
+    availableTenants: [{ id: 'tenant-1', name: 'Test Org', slug: 'test-org' }],
+    switchTenant: jest.fn(),
+    isSwitchingTenant: false,
+    isImpersonating: false,
+    stopImpersonation: jest.fn(),
   }),
 }))
 

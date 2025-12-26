@@ -1,9 +1,19 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useEncounters } from '../hooks/useEncounters'
+import { TenantSwitcher } from '../components/TenantSwitcher'
 
 export default function CodePage() {
-  const { user, logout } = useAuth()
+  const {
+    user,
+    logout,
+    currentTenant,
+    availableTenants,
+    switchTenant,
+    isSwitchingTenant,
+    isImpersonating,
+    stopImpersonation,
+  } = useAuth()
   const { data: encountersData, isLoading, error } = useEncounters()
 
   return (
@@ -17,6 +27,14 @@ export default function CodePage() {
             <h1 className="text-xl font-bold text-gray-900">Code</h1>
           </div>
           <div className="flex items-center gap-4">
+            <TenantSwitcher
+              currentTenant={currentTenant}
+              availableTenants={availableTenants}
+              onSwitchTenant={switchTenant}
+              isSwitching={isSwitchingTenant}
+              isImpersonating={isImpersonating}
+              onStopImpersonation={stopImpersonation}
+            />
             <span className="text-gray-600">{user?.full_name}</span>
             <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">
               Sign out
