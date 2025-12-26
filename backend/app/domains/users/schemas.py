@@ -41,3 +41,52 @@ class TokenResponse(BaseModel):
 
 class GoogleAuthRequest(BaseModel):
     credential: str
+
+
+# Tenant schemas
+class TenantCreate(BaseModel):
+    name: str
+
+
+class TenantResponse(BaseModel):
+    id: UUID
+    name: str
+    slug: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TenantMembershipResponse(BaseModel):
+    tenant: TenantResponse
+    roles: list[str]
+    is_default: bool
+
+    class Config:
+        from_attributes = True
+
+
+class UserWithTenantsResponse(UserResponse):
+    tenants: list[TenantMembershipResponse] = []
+
+
+class TenantInvitationCreate(BaseModel):
+    email: EmailStr
+    roles: list[str]
+
+
+class TenantInvitationResponse(BaseModel):
+    id: UUID
+    tenant_id: UUID
+    email: str
+    roles: list[str]
+    invited_by_user_id: UUID
+    expires_at: datetime
+    accepted_at: datetime | None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
