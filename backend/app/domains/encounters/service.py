@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.tenant import TenantContext
 from app.domains.encounters.models import (
     HL7Message,
     Patient,
@@ -34,11 +35,27 @@ logger = logging.getLogger(__name__)
 
 
 class EncountersService:
-    """Service for managing encounters and related clinical data."""
+    """Service for managing encounters and related clinical data.
 
-    def __init__(self, db: Session):
+    Supports optional tenant context for multi-tenancy. When tenant_context
+    is provided, new records are scoped to the tenant and queries filter
+    by tenant_id.
+    """
+
+    def __init__(self, db: Session, tenant_context: TenantContext | None = None):
         self.db = db
+        self.tenant_context = tenant_context
         self._coding_queue_service: CodingQueueService | None = None
+
+    @property
+    def tenant_id(self) -> UUID | None:
+        """Current tenant ID if tenant context is available."""
+        return self.tenant_context.tenant_id if self.tenant_context else None
+
+    def _set_tenant_id(self, obj) -> None:
+        """Set tenant_id on an object if tenant context is available."""
+        if self.tenant_context:
+            obj.tenant_id = self.tenant_context.tenant_id
 
     @property
     def coding_queue_service(self) -> CodingQueueService:
@@ -78,6 +95,7 @@ class EncountersService:
             date_of_birth=parsed.date_of_birth,
             gender=parsed.gender,
         )
+        self._set_tenant_id(patient)
         self.db.add(patient)
         self.db.commit()
         self.db.refresh(patient)
@@ -118,6 +136,10 @@ class EncountersService:
     ) -> tuple[list[Encounter], int]:
         """List encounters with optional filters."""
         query = self.db.query(Encounter).join(Patient)
+
+        # Filter by tenant if context is available
+        if self.tenant_id:
+            query = query.filter(Encounter.tenant_id == self.tenant_id)
 
         if include_patient:
             query = query.options(joinedload(Encounter.patient))
@@ -184,6 +206,7 @@ class EncountersService:
             discharge_datetime=parsed.discharge_datetime,
             last_message_at=datetime.now(timezone.utc),
         )
+        self._set_tenant_id(encounter)
         self.db.add(encounter)
         self.db.commit()
         self.db.refresh(encounter)
@@ -257,6 +280,7 @@ class EncountersService:
             file_source=file_source,
             processing_status="pending",
         )
+        self._set_tenant_id(message)
         self.db.add(message)
         self.db.commit()
         self.db.refresh(message)

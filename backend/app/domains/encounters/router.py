@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status, Query, UploadFile, File
 
-from app.core.dependencies import CurrentUser, DbSession
+from app.core.dependencies import CurrentUser, DbSession, OptionalTenantContextDep
 from app.domains.encounters.service import EncountersService
 from app.domains.encounters.hl7 import HL7BatchParser
 from app.domains.encounters.schemas import (
@@ -32,6 +32,7 @@ router = APIRouter()
 async def upload_hl7_files(
     db: DbSession,
     current_user: CurrentUser,
+    tenant_context: OptionalTenantContextDep,
     files: list[UploadFile] = File(..., description="HL7 message files to upload"),
 ):
     """
@@ -43,14 +44,15 @@ async def upload_hl7_files(
 
     Requires authentication with 'coder' role.
     """
-    # Check for coder role
-    if "coder" not in current_user.roles and "admin" not in current_user.roles:
+    # Check for coder role - use tenant_roles if available, otherwise legacy roles
+    effective_roles = tenant_context.tenant_roles if tenant_context else current_user.roles
+    if "coder" not in effective_roles and "admin" not in effective_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Coder role required",
         )
 
-    service = EncountersService(db)
+    service = EncountersService(db, tenant_context)
     batch_parser = HL7BatchParser()
 
     result = UploadResult(
@@ -117,6 +119,7 @@ async def upload_hl7_files(
 def list_encounters(
     db: DbSession,
     current_user: CurrentUser,
+    tenant_context: OptionalTenantContextDep,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     status: str | None = Query(None, description="Filter by status"),
@@ -129,7 +132,7 @@ def list_encounters(
     """
     List encounters with optional filters.
 
-    Requires authentication.
+    Requires authentication. Results are filtered by current tenant.
     """
     filters = EncounterFilters(
         status=status,
@@ -139,7 +142,7 @@ def list_encounters(
         visit_number=visit_number,
     )
 
-    service = EncountersService(db)
+    service = EncountersService(db, tenant_context)
     encounters, total = service.list_encounters(
         filters=filters, skip=skip, limit=limit, include_patient=include_patient
     )
@@ -165,13 +168,14 @@ def get_encounter(
     encounter_id: UUID,
     db: DbSession,
     current_user: CurrentUser,
+    tenant_context: OptionalTenantContextDep,
 ):
     """
     Get encounter with all related clinical data.
 
     Requires authentication.
     """
-    service = EncountersService(db)
+    service = EncountersService(db, tenant_context)
     encounter = service.get_encounter_with_details(encounter_id)
 
     if not encounter:
@@ -189,20 +193,22 @@ def mark_ready_to_code(
     request: MarkReadyToCodeRequest,
     db: DbSession,
     current_user: CurrentUser,
+    tenant_context: OptionalTenantContextDep,
 ):
     """
     Manually mark an encounter as ready to code.
 
     Requires authentication with 'coder' role.
     """
-    # Check for coder role
-    if "coder" not in current_user.roles and "admin" not in current_user.roles:
+    # Check for coder role - use tenant_roles if available, otherwise legacy roles
+    effective_roles = tenant_context.tenant_roles if tenant_context else current_user.roles
+    if "coder" not in effective_roles and "admin" not in effective_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Coder role required",
         )
 
-    service = EncountersService(db)
+    service = EncountersService(db, tenant_context)
     encounter = service.mark_ready_to_code(encounter_id, request.reason)
 
     if not encounter:
@@ -221,13 +227,14 @@ def get_patient_by_mrn(
     mrn: str,
     db: DbSession,
     current_user: CurrentUser,
+    tenant_context: OptionalTenantContextDep,
 ):
     """
     Get patient by MRN.
 
     Requires authentication.
     """
-    service = EncountersService(db)
+    service = EncountersService(db, tenant_context)
     patient = service.get_patient_by_mrn(mrn)
 
     if not patient:
@@ -245,13 +252,14 @@ def get_patient_by_mrn(
 def list_service_line_rules(
     db: DbSession,
     current_user: CurrentUser,
+    tenant_context: OptionalTenantContextDep,
 ):
     """
     List all active service line rules.
 
     Requires authentication.
     """
-    service = EncountersService(db)
+    service = EncountersService(db, tenant_context)
     return service.get_service_line_rules()
 
 
@@ -261,6 +269,7 @@ def list_service_line_rules(
 def get_stale_encounters(
     db: DbSession,
     current_user: CurrentUser,
+    tenant_context: OptionalTenantContextDep,
     hours: int = Query(72, ge=1, le=720, description="Hours without activity"),
 ):
     """
@@ -268,13 +277,14 @@ def get_stale_encounters(
 
     Requires authentication with 'admin' or 'coder' role.
     """
-    if "coder" not in current_user.roles and "admin" not in current_user.roles:
+    effective_roles = tenant_context.tenant_roles if tenant_context else current_user.roles
+    if "coder" not in effective_roles and "admin" not in effective_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Coder or admin role required",
         )
 
-    service = EncountersService(db)
+    service = EncountersService(db, tenant_context)
     return service.get_stale_encounters(hours=hours)
 
 
@@ -282,6 +292,7 @@ def get_stale_encounters(
 def flag_stale_encounters(
     db: DbSession,
     current_user: CurrentUser,
+    tenant_context: OptionalTenantContextDep,
     hours: int = Query(72, ge=1, le=720, description="Hours without activity"),
 ):
     """
@@ -289,13 +300,14 @@ def flag_stale_encounters(
 
     Requires authentication with 'admin' role.
     """
-    if "admin" not in current_user.roles:
+    effective_roles = tenant_context.tenant_roles if tenant_context else current_user.roles
+    if "admin" not in effective_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin role required",
         )
 
-    service = EncountersService(db)
+    service = EncountersService(db, tenant_context)
     count = service.flag_stale_encounters(hours=hours)
 
     return {"flagged_count": count}
