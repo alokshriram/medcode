@@ -81,7 +81,7 @@ def upgrade() -> None:
     op.execute("""
         INSERT INTO workflow.coding_configuration (id, key, value, description) VALUES
         (gen_random_uuid(), 'always_create_facility', 'true', 'Always create facility work item for encounters'),
-        (gen_random_uuid(), 'always_create_professional', 'false', 'Always create professional work item regardless of conditions'),
+        (gen_random_uuid(), 'always_create_professional', 'true', 'Always create professional work item regardless of conditions'),
         (gen_random_uuid(), 'professional_component_services', '["radiology", "pathology", "cardiology", "surgery"]', 'Service lines that trigger professional component'),
         (gen_random_uuid(), 'encounter_timeout_hours', '72', 'Hours before flagging stale encounter')
     """)

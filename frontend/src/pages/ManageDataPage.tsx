@@ -1,12 +1,23 @@
 import { useAuth } from '../hooks/useAuth'
 import { Navigate, Link } from 'react-router-dom'
 import { ManageDataPanel } from '../components/ManageDataPanel'
+import { TenantSwitcher } from '../components/TenantSwitcher'
 
 export default function ManageDataPage() {
-  const { user, logout } = useAuth()
+  const {
+    user,
+    logout,
+    effectiveRoles,
+    currentTenant,
+    availableTenants,
+    switchTenant,
+    isSwitchingTenant,
+    isImpersonating,
+    stopImpersonation,
+  } = useAuth()
 
-  // Role gate - redirect if no access
-  const hasAccess = user?.roles?.some((role) => ['coder', 'admin'].includes(role.toLowerCase()))
+  // Role gate - redirect if no access (using tenant-aware roles)
+  const hasAccess = effectiveRoles.some((role) => ['coder', 'admin'].includes(role.toLowerCase()))
 
   if (!hasAccess) {
     return <Navigate to="/dashboard" replace />
@@ -23,6 +34,14 @@ export default function ManageDataPage() {
             <h1 className="text-xl font-bold text-gray-900">Manage Data</h1>
           </div>
           <div className="flex items-center gap-4">
+            <TenantSwitcher
+              currentTenant={currentTenant}
+              availableTenants={availableTenants}
+              onSwitchTenant={switchTenant}
+              isSwitching={isSwitchingTenant}
+              isImpersonating={isImpersonating}
+              onStopImpersonation={stopImpersonation}
+            />
             <span className="text-gray-600">{user?.full_name}</span>
             <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-700">
               Sign out
@@ -32,7 +51,7 @@ export default function ManageDataPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <ManageDataPanel userRoles={user?.roles || []} />
+        <ManageDataPanel userRoles={effectiveRoles} />
       </main>
     </div>
   )
