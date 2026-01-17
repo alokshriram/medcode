@@ -7,7 +7,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.domains.workflow.models import CodingQueueItem, EncounterSnapshot, CodingConfiguration
+from app.domains.workflow.models import CodingQueueItem, EncounterSnapshot, CodingConfiguration, CodingResult
 from app.domains.encounters.models import Encounter, Patient, Diagnosis, Procedure, Observation, Order, Document
 
 logger = logging.getLogger(__name__)
@@ -91,6 +91,74 @@ class CodingQueueService:
 
         total = query.count()
         items = query.order_by(CodingQueueItem.priority.desc(), CodingQueueItem.created_at).offset(skip).limit(limit).all()
+
+        return items, total
+
+    def list_queue_items_with_patient(
+        self,
+        status: str | None = None,
+        billing_component: str | None = None,
+        service_line: str | None = None,
+        assigned_to: UUID | None = None,
+        tenant_id: UUID | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> tuple[list[dict], int]:
+        """List queue items with patient info for display."""
+        query = (
+            self.db.query(
+                CodingQueueItem,
+                Patient.name_family,
+                Patient.name_given,
+                Patient.mrn,
+                Encounter.visit_number,
+                Encounter.encounter_type,
+            )
+            .join(Encounter, CodingQueueItem.encounter_id == Encounter.id)
+            .join(Patient, Encounter.patient_id == Patient.id)
+        )
+
+        if tenant_id:
+            query = query.filter(CodingQueueItem.tenant_id == tenant_id)
+        if status:
+            query = query.filter(CodingQueueItem.status == status)
+        if billing_component:
+            query = query.filter(CodingQueueItem.billing_component == billing_component)
+        if service_line:
+            query = query.filter(CodingQueueItem.service_line == service_line)
+        if assigned_to:
+            query = query.filter(CodingQueueItem.assigned_to == assigned_to)
+
+        total = query.count()
+        results = query.order_by(
+            CodingQueueItem.priority.desc(),
+            CodingQueueItem.created_at
+        ).offset(skip).limit(limit).all()
+
+        items = []
+        for item, name_family, name_given, mrn, visit_number, encounter_type in results:
+            patient_name = f"{name_family or ''}, {name_given or ''}".strip(', ')
+            items.append({
+                "id": item.id,
+                "tenant_id": item.tenant_id,
+                "encounter_id": item.encounter_id,
+                "billing_component": item.billing_component,
+                "queue_type": item.queue_type,
+                "service_line": item.service_line,
+                "payer_identifier": item.payer_identifier,
+                "priority": item.priority,
+                "status": item.status,
+                "assigned_to": item.assigned_to,
+                "assigned_at": item.assigned_at,
+                "completed_at": item.completed_at,
+                "completed_by": item.completed_by,
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+                "patient_name": patient_name or None,
+                "patient_mrn": mrn,
+                "visit_number": visit_number,
+                "encounter_type": encounter_type,
+            })
 
         return items, total
 
@@ -397,3 +465,89 @@ class CodingQueueService:
             .order_by(EncounterSnapshot.snapshot_version.desc())
             .first()
         )
+
+    # --- Coding Results Operations ---
+
+    def get_coding_results(self, queue_item_id: UUID) -> list[CodingResult]:
+        """Get all coding results for a queue item."""
+        return (
+            self.db.query(CodingResult)
+            .filter(CodingResult.queue_item_id == queue_item_id)
+            .order_by(CodingResult.code_category, CodingResult.sequence)
+            .all()
+        )
+
+    def save_coding_results(
+        self,
+        queue_item_id: UUID,
+        diagnosis_codes: list[dict],
+        procedure_codes: list[dict],
+        coded_by: UUID,
+        tenant_id: UUID | None = None,
+    ) -> list[CodingResult]:
+        """
+        Save coding results for a queue item.
+
+        Replaces all existing codes for the queue item with the new codes.
+        """
+        # Delete existing codes
+        self.db.query(CodingResult).filter(
+            CodingResult.queue_item_id == queue_item_id
+        ).delete()
+
+        results: list[CodingResult] = []
+        now = datetime.now(timezone.utc)
+
+        # Save diagnosis codes
+        for dx in diagnosis_codes:
+            result = CodingResult(
+                tenant_id=tenant_id,
+                queue_item_id=queue_item_id,
+                code=dx["code"],
+                code_type="ICD-10-CM",
+                description=dx["description"],
+                code_category="diagnosis",
+                is_principal=dx.get("is_principal", False),
+                poa_indicator=dx.get("poa_indicator"),
+                sequence=dx["sequence"],
+                procedure_date=None,
+                coded_by=coded_by,
+                coded_at=now,
+            )
+            self.db.add(result)
+            results.append(result)
+
+        # Save procedure codes
+        for px in procedure_codes:
+            procedure_date = None
+            if px.get("procedure_date"):
+                if isinstance(px["procedure_date"], str):
+                    procedure_date = datetime.fromisoformat(px["procedure_date"].replace("Z", "+00:00"))
+                else:
+                    procedure_date = px["procedure_date"]
+
+            result = CodingResult(
+                tenant_id=tenant_id,
+                queue_item_id=queue_item_id,
+                code=px["code"],
+                code_type=px.get("code_type", "ICD-10-PCS"),
+                description=px["description"],
+                code_category="procedure",
+                is_principal=px.get("is_principal", False),
+                poa_indicator=None,
+                sequence=px["sequence"],
+                procedure_date=procedure_date,
+                coded_by=coded_by,
+                coded_at=now,
+            )
+            self.db.add(result)
+            results.append(result)
+
+        self.db.commit()
+
+        # Refresh all results
+        for result in results:
+            self.db.refresh(result)
+
+        logger.info(f"Saved {len(results)} coding results for queue item {queue_item_id}")
+        return results
