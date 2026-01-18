@@ -269,6 +269,7 @@ class CodingQueueService:
         """Create a single queue item with snapshot."""
         # Create queue item
         queue_item = CodingQueueItem(
+            tenant_id=encounter.tenant_id,
             encounter_id=encounter.id,
             billing_component=billing_component,
             queue_type=encounter.encounter_type,
@@ -284,6 +285,7 @@ class CodingQueueService:
         # Create snapshot
         snapshot_data = self._create_encounter_snapshot_data(encounter)
         snapshot = EncounterSnapshot(
+            tenant_id=encounter.tenant_id,
             encounter_id=encounter.id,
             queue_item_id=queue_item.id,
             snapshot_data=snapshot_data,
@@ -444,6 +446,7 @@ class CodingQueueService:
         # Create new snapshot
         snapshot_data = self._create_encounter_snapshot_data(encounter)
         snapshot = EncounterSnapshot(
+            tenant_id=encounter.tenant_id,
             encounter_id=encounter.id,
             queue_item_id=queue_item_id,
             snapshot_data=snapshot_data,
