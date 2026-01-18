@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ManageDataPage from './pages/ManageDataPage'
 import CodePage from './pages/CodePage'
+import CodingWorkbenchPage from './pages/CodingWorkbenchPage'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -44,6 +45,14 @@ function App() {
         element={
           <ProtectedRoute>
             <CodePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/code/:queueItemId"
+        element={
+          <ProtectedRoute>
+            <CodingWorkbenchPage />
           </ProtectedRoute>
         }
       />

@@ -14,6 +14,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 from app.domains.workflow.router import router as workflow_router
+from app.domains.workflow.coding_queue_router import router as coding_queue_router
 from app.domains.catalogs.router import router as catalogs_router
 from app.domains.users.router import router as users_router
 from app.domains.encounters.router import router as encounters_router
@@ -45,6 +46,11 @@ app.include_router(
     workflow_router,
     prefix=f"{settings.API_V1_PREFIX}/workflow",
     tags=["workflow"],
+)
+app.include_router(
+    coding_queue_router,
+    prefix=f"{settings.API_V1_PREFIX}/workflow",
+    tags=["coding-queue"],
 )
 app.include_router(
     catalogs_router,
