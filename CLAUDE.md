@@ -72,6 +72,10 @@ When adding new features:
 
 ```
 medcode/                          # Monorepo root
+├── .bots/                       # AI assistant guidance
+│   ├── architecture.md          # Architectural principles and patterns
+│   ├── coding.md                # Coding standards and conventions
+│   └── testing.md               # Testing strategy and practices
 ├── backend/
 │   ├── app/
 │   │   ├── main.py              # FastAPI application entry
@@ -213,6 +217,13 @@ When implementing:
 - Consider a separate bounded context for AI services
 - Design for async processing (medical records can be large)
 - Plan for model versioning and updates
+
+## Engineering Guidance
+
+Detailed engineering guidance for AI assistants and developers is in `.bots/`:
+- [Architecture](.bots/architecture.md) - DDD principles, API-first strategy, domain isolation, orchestration, idempotency, performance
+- [Coding](.bots/coding.md) - Clean code, Python/TypeScript standards, DRY principle, refactoring, conventional commits
+- [Testing](.bots/testing.md) - Unit testing, 80/20 rule, data seeding/cleanup, test-specific API routes
 
 ## Product Design Decisions
 
